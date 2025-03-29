@@ -62,6 +62,12 @@ class Gasto(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True)
+    cuenta = models.ForeignKey(
+        Cuenta,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     fecha = models.DateField(default=now)
     descripcion = models.TextField(blank=True, null=True)
