@@ -51,6 +51,7 @@ class Cuenta(models.Model):
     banco = models.CharField(max_length=50)
     saldo = models.DecimalField(max_digits=10, decimal_places=2)
     fecha_ultimo_deposito = models.DateField(auto_now=True)
+    esFavorito = models.BooleanField(default=False)
 
     def __str__(self):
         return self.banco
