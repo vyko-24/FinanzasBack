@@ -165,3 +165,13 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': False,  # Si deseas poner en lista negra los refresh tokens rotados
     # Otros parámetros que puedas necesitar configurar
 }
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+#Configuración para Gmail
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+# Usar su correo de UTEZ
+EMAIL_HOST_USER = "20223tn008@utez.edu.mx"
+# Obtener de https://myaccount.google.com/apppasswords
+EMAIL_HOST_PASSWORD = "akwe hkcq kief fgim"
