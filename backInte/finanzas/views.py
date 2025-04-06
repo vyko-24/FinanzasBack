@@ -35,11 +35,23 @@ class UserViewSet(viewsets.ModelViewSet):
 
     
     def get_permissions(self):
-        if self.request.method in ['POST','PUT','DELETE','GET']:
+        if self.request.method in ['GET','PUT','DELETE']:
             #retornar la funcion que checa si tenemos sesión
             return[IsAuthenticated()]
         #Da acceso al otro método
         return []
+
+    def create(self, request, *args, **kwargs):
+        """Crea un nuevo usuario"""
+        user_data = request.data
+        # Verifica si el correo ya existe
+        if CustomUser.objects.filter(email=user_data['email']).exists():
+            return Response({"error": "El correo ya está en uso"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Llama al método original para crear el usuario
+        user_data['password'] = make_password(user_data['password'])
+        response = super().create(request, *args, **kwargs)
+        return Response(response.data, status=status.HTTP_201_CREATED)
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomUserTokenObtainPairSerializer
