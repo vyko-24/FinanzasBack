@@ -78,6 +78,8 @@ class CuentaViewSet(viewsets.ModelViewSet):
             "cuentas": cuenta_serializer.data
         }, status=status.HTTP_200_OK)
 
+
+from decimal import Decimal
 class GastoViewSet(viewsets.ModelViewSet):
     queryset = Gasto.objects.all()
     serializer_class=GastoSerializer
@@ -111,8 +113,6 @@ class GastoViewSet(viewsets.ModelViewSet):
             cuenta = Cuenta.objects.get(id=cuenta_id, usuario=request.user)
         except Cuenta.DoesNotExist:
             return Response({"error": "Cuenta no encontrada"}, status=status.HTTP_404_NOT_FOUND)
-
-        from decimal import Decimal
          # Convertir monto a Decimal
         gasto_monto = Decimal(str(gasto_data.get('monto', 0)))
     # Resta el gasto del saldo de la cuenta
