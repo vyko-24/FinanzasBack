@@ -35,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     
     def get_permissions(self):
-        if self.request.method in ['GET','PUT','DELETE']:
+        if self.request.method in ['POST','PUT','DELETE','GET']:
             #retornar la funcion que checa si tenemos sesión
             return[IsAuthenticated()]
         #Da acceso al otro método
