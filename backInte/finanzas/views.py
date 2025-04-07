@@ -195,7 +195,7 @@ def send_reset_email(request):
             # Queremos que desde el correo electronica exista un link que incluya el token para que desde gmail (u otro) el usuario pueda regresar al sistema
             # y cambie su conraseña (debemos revisar que el token sea igual al que esta la BD para ello)
             # Construir el enlace de recuperación, en este caso lo dejamos en localhost pero deberia cambiar en producción
-            reset_link = f"http://localhost:5173/reset-password/{token}"
+            reset_link = f"http://localhost:5173/reset-password?={token}"
 
             #Envio de correo
             send_mail(
