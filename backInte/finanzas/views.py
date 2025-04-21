@@ -62,6 +62,17 @@ class CuentaViewSet(viewsets.ModelViewSet):
     renderer_classes=[JSONRenderer]
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+    
+    @action(detail=False, methods=['put'], url_path='favorita/(?P<cuenta_id>[^/.]+)')
+    def marcar_favorita(self, request, cuenta_id):
+        """Marca una cuenta como favorita"""
+        try:
+            cuenta = Cuenta.objects.get(id=cuenta_id, usuario=request.user)
+            cuenta.esFavorito = not cuenta.esFavorito  # Cambia el estado de favorita
+            cuenta.save()
+            return Response({"message": "Cuenta actualizada correctamente"}, status=status.HTTP_200_OK)
+        except Cuenta.DoesNotExist:
+            return Response({"error": "Cuenta no encontrada"}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['get'], url_path='mis-cuentas')
     def mis_cuentas_y_gastos(self, request):
@@ -86,6 +97,7 @@ class GastoViewSet(viewsets.ModelViewSet):
     renderer_classes=[JSONRenderer]
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
 
     
     @action(detail=False, methods=['get'], url_path='mis-gastos')
@@ -195,7 +207,7 @@ def send_reset_email(request):
             # Queremos que desde el correo electronica exista un link que incluya el token para que desde gmail (u otro) el usuario pueda regresar al sistema
             # y cambie su conraseña (debemos revisar que el token sea igual al que esta la BD para ello)
             # Construir el enlace de recuperación, en este caso lo dejamos en localhost pero deberia cambiar en producción
-            reset_link = f"http://localhost:5173/reset-password?={token}"
+            reset_link = f"https://9e87-201-162-226-158.ngrok-free.app/reset-password?={token}"
 
             #Envio de correo
             send_mail(
@@ -261,6 +273,7 @@ def reset_password(request):
         new_password = request.POST.get("password")
         #Buscamos al usuario por token (ya que deberia ser unico y debe ser correcto, si no nos estan hackeando 0_0)
         user = CustomUser.objects.filter(token=token).first()
+        loginLink = f"https://9e87-201-162-226-158.ngrok-free.app/login/"
 
         if user:
             user.password = make_password(new_password)  # Encripta la nueva contraseña
@@ -293,7 +306,7 @@ def reset_password(request):
                     
                     <!-- Botón de acción -->
                     <div style="text-align: center; margin: 30px 0;">
-                      <a href="http://localhost:5173/login/" 
+                      <a href={loginLink} 
                          style="display: inline-block; padding: 12px 24px; background-color: #0066cc; color: #ffffff; 
                                 text-decoration: none; font-weight: bold; border-radius: 5px; font-size: 16px;">
                         Iniciar sesión
@@ -303,7 +316,7 @@ def reset_password(request):
                     <!-- Enlace como texto plano -->
                     <div style="color: #555; font-size: 14px;">
                       <p>O copia y pega este enlace en tu navegador:</p>
-                      <p><a href="http://localhost:5173/login/" style="color: #0066cc;">http://localhost:5173/login/</a></p>
+                      <p><a href={loginLink} style="color: #0066cc;">{loginLink}</a></p>
                       <p>Si tú no solicitaste este cambio, tu cuenta podría estar comprometida. Por favor contáctanos inmediatamente en <strong>admin@errorpages.com</strong>.</p>
                     </div>
                     
