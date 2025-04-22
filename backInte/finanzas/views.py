@@ -209,6 +209,7 @@ def send_reset_email(request):
             # Construir el enlace de recuperación, en este caso lo dejamos en localhost pero deberia cambiar en producción
             reset_link = f"https://53b6-201-160-106-34.ngrok-free.app/reset-password?={token}"
 
+
             #Envio de correo
             send_mail(
                 subject="🔐 Recuperación de contraseña",
