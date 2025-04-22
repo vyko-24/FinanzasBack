@@ -45,9 +45,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 class Cuenta(models.Model):
     usuario = models.ForeignKey(
         CustomUser,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True)
+        on_delete=models.CASCADE,
+        null=False,
+        blank=False)
     banco = models.CharField(max_length=50)
     saldo = models.DecimalField(max_digits=10, decimal_places=2)
     fecha_ultimo_deposito = models.DateField(auto_now=True)
@@ -63,6 +63,7 @@ class Gasto(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True)
+
     cuenta = models.ForeignKey(
         Cuenta,
         on_delete=models.SET_NULL,
