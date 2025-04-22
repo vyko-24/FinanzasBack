@@ -60,16 +60,15 @@ class Cuenta(models.Model):
 class Gasto(models.Model):
     usuario = models.ForeignKey(
         CustomUser,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True)
+        on_delete=models.CASCADE,
+        null=False,
+        blank=False)
 
     cuenta = models.ForeignKey(
         Cuenta,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True
-    )
+      on_delete=models.CASCADE,
+      null=False,
+      blank=False)    
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     fecha = models.DateField(default=now)
     descripcion = models.TextField(blank=True, null=True)

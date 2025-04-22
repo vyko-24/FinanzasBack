@@ -116,35 +116,35 @@ class GastoViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
     
     def create(self, request, *args, **kwargs):
-        """Crea un gasto y actualiza la cuenta asociada"""
         gasto_data = request.data
         cuenta_id = gasto_data.get('cuenta')
 
-        # Verifica que la cuenta exista
         try:
             cuenta = Cuenta.objects.get(id=cuenta_id, usuario=request.user)
         except Cuenta.DoesNotExist:
             return Response({"error": "Cuenta no encontrada"}, status=status.HTTP_404_NOT_FOUND)
-         # Convertir monto a Decimal
+
         gasto_monto = Decimal(str(gasto_data.get('monto', 0)))
-    # Resta el gasto del saldo de la cuenta
+
+        #-------------------------------------------------
+        if cuenta.saldo < gasto_monto:
+            return Response({"error": "Saldo insuficiente en la cuenta"}, status=status.HTTP_400_BAD_REQUEST)
+
+        
         cuenta.saldo -= gasto_monto
         cuenta.save()
 
-        # Llama al método original para crear el gasto
         response = super().create(request, *args, **kwargs)
 
-        # Retorna la respuesta con el gasto creado y el saldo actualizado
         return Response({
             "gasto": response.data,
             "nuevo_saldo": cuenta.saldo
         }, status=status.HTTP_201_CREATED)
     
     def update(self, request, *args, **kwargs):
-        """Actualiza un gasto y ajusta el saldo de la cuenta"""
         gasto = self.get_object()
-        cuenta_anterior = gasto.cuenta  # Guarda la cuenta original
-        monto_anterior = gasto.monto  # Guarda el monto original
+        cuenta_anterior = gasto.cuenta
+        monto_anterior = gasto.monto
 
         gasto_data = request.data
         nueva_cuenta_id = gasto_data.get('cuenta', cuenta_anterior.id)
@@ -155,21 +155,27 @@ class GastoViewSet(viewsets.ModelViewSet):
         except Cuenta.DoesNotExist:
             return Response({"error": "Cuenta no encontrada"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Si la cuenta cambió, revertimos la cuenta anterior
+        #Coso si se pone otra cuenta
         if cuenta_anterior != nueva_cuenta:
-            cuenta_anterior.saldo += monto_anterior  # Revertir el saldo en la cuenta anterior
-            cuenta_anterior.save()
+            cuenta_anterior.saldo += monto_anterior
 
-            nueva_cuenta.saldo -= nuevo_monto  # Aplicar el nuevo gasto a la nueva cuenta
+            
+            if nueva_cuenta.saldo < nuevo_monto:
+                return Response({"error": "Saldo insuficiente en la nueva cuenta"}, status=status.HTTP_400_BAD_REQUEST)
+
+            nueva_cuenta.saldo -= nuevo_monto
+            cuenta_anterior.save()
             nueva_cuenta.save()
 
         else:
-            # Ajustamos el saldo si solo cambia el monto
+            # Coso si no se cambia la cuenta jsjs
             diferencia = nuevo_monto - monto_anterior
+            if diferencia > 0 and nueva_cuenta.saldo < diferencia:
+                return Response({"error": "Saldo insuficiente para modificar el gasto"}, status=status.HTTP_400_BAD_REQUEST)
+
             nueva_cuenta.saldo -= diferencia
             nueva_cuenta.save()
 
-        # Llama al método original para actualizar el gasto
         response = super().update(request, *args, **kwargs)
 
         return Response({
