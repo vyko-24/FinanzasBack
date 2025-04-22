@@ -213,7 +213,7 @@ def send_reset_email(request):
             # Queremos que desde el correo electronica exista un link que incluya el token para que desde gmail (u otro) el usuario pueda regresar al sistema
             # y cambie su conraseña (debemos revisar que el token sea igual al que esta la BD para ello)
             # Construir el enlace de recuperación, en este caso lo dejamos en localhost pero deberia cambiar en producción
-            reset_link = f"https://53b6-201-160-106-34.ngrok-free.app/reset-password?={token}"
+            reset_link = f"http://localhost:5173/reset-password/{token}"
 
 
             #Envio de correo
@@ -280,7 +280,7 @@ def reset_password(request):
         new_password = request.POST.get("password")
         #Buscamos al usuario por token (ya que deberia ser unico y debe ser correcto, si no nos estan hackeando 0_0)
         user = CustomUser.objects.filter(token=token).first()
-        loginLink = f"https://53b6-201-160-106-34.ngrok-free.app/login/"
+        loginLink = f"http://localhost:5173/login/"
 
         if user:
             user.password = make_password(new_password)  # Encripta la nueva contraseña
