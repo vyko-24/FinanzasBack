@@ -25,6 +25,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+
 # Create your views here.
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
@@ -36,19 +39,21 @@ class UserViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         if self.request.method in ['GET','PUT','DELETE']:
-            #retornar la funcion que checa si tenemos sesión
             return[IsAuthenticated()]
-        #Da acceso al otro método
         return []
 
     def create(self, request, *args, **kwargs):
         """Crea un nuevo usuario"""
         user_data = request.data
-        # Verifica si el correo ya existe
+        email = user_data.get('email')
+        try:
+          validate_email(email)
+        except ValidationError:
+          return Response({"error": "El formato del correo no es válido"}, status=status.HTTP_400_BAD_REQUEST)
         if CustomUser.objects.filter(email=user_data['email']).exists():
             return Response({"error": "El correo ya está en uso"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Llama al método original para crear el usuario
+        
         user_data['password'] = make_password(user_data['password'])
         response = super().create(request, *args, **kwargs)
         return Response(response.data, status=status.HTTP_201_CREATED)
@@ -68,7 +73,7 @@ class CuentaViewSet(viewsets.ModelViewSet):
         """Marca una cuenta como favorita"""
         try:
             cuenta = Cuenta.objects.get(id=cuenta_id, usuario=request.user)
-            cuenta.esFavorito = not cuenta.esFavorito  # Cambia el estado de favorita
+            cuenta.esFavorito = not cuenta.esFavorito  
             cuenta.save()
             return Response({"message": "Cuenta actualizada correctamente"}, status=status.HTTP_200_OK)
         except Cuenta.DoesNotExist:
@@ -79,10 +84,8 @@ class CuentaViewSet(viewsets.ModelViewSet):
         """Obtiene todas las cuentas del usuario autenticado"""
         user = request.user
         
-        # Filtra las cuentas y gastos del usuario autenticado
         cuentas = Cuenta.objects.filter(usuario=user)
 
-        # Serializa las cuentas y gastos
         cuenta_serializer = CuentaSerializer(cuentas, many=True)
 
         return Response({
@@ -105,10 +108,8 @@ class GastoViewSet(viewsets.ModelViewSet):
         """Obtiene todas las cuentas del usuario autenticado"""
         user = request.user
         
-        # Filtra las cuentas y gastos del usuario autenticado
         gastos = Gasto.objects.filter(cuenta__usuario=user)
 
-        # Serializa las cuentas y gastos
         gasto_serializer = GastoSerializer(gastos, many=True)
 
         return Response({
@@ -155,7 +156,6 @@ class GastoViewSet(viewsets.ModelViewSet):
         except Cuenta.DoesNotExist:
             return Response({"error": "Cuenta no encontrada"}, status=status.HTTP_404_NOT_FOUND)
 
-        #Coso si se pone otra cuenta
         if cuenta_anterior != nueva_cuenta:
             cuenta_anterior.saldo += monto_anterior
 
@@ -168,7 +168,6 @@ class GastoViewSet(viewsets.ModelViewSet):
             nueva_cuenta.save()
 
         else:
-            # Coso si no se cambia la cuenta jsjs
             diferencia = nuevo_monto - monto_anterior
             if diferencia > 0 and nueva_cuenta.saldo < diferencia:
                 return Response({"error": "Saldo insuficiente para modificar el gasto"}, status=status.HTTP_400_BAD_REQUEST)
@@ -187,7 +186,6 @@ class GastoViewSet(viewsets.ModelViewSet):
 
 
 
-#Importaciones para enviar correo y recuperación de contraseña
 import secrets
 from django.core.mail import send_mail
 from django.http import JsonResponse
@@ -197,22 +195,15 @@ from django.contrib.auth.hashers import make_password
 @csrf_exempt
 def send_reset_email(request):
     if request.method == "POST":
-        #LLega del request de React información del email del usuario que quiere restablecer la contraseña
         email = request.POST.get("email")
-        #Busquemos al usuario porque puede ser que no exista en el sistema
         user = CustomUser.objects.filter(email=email).first()
 
         if user:
-            # Generar un token aleatorio de 20 caracteres
             token = secrets.token_urlsafe(20)
 
-            # Las siguientes 2 lineas guarda el token en la BD
             user.token = token
             user.save()
 
-            # Queremos que desde el correo electronica exista un link que incluya el token para que desde gmail (u otro) el usuario pueda regresar al sistema
-            # y cambie su conraseña (debemos revisar que el token sea igual al que esta la BD para ello)
-            # Construir el enlace de recuperación, en este caso lo dejamos en localhost pero deberia cambiar en producción
             reset_link = f"http://localhost:5173/reset-password/{token}"
 
 
@@ -265,32 +256,26 @@ def send_reset_email(request):
 </html>
                 """
             )
-            #Regresamos mensaje de exito a React
             return JsonResponse({"message": "Correo de recuperación enviado."}, status=200)
-        #Regresamos mensaje de error a React
         return JsonResponse({"error": "Usuario no encontrado"}, status=404)
 
 
-#Vista que verificara que el token del usuario sea correcto y realiza el cambio de contraseña
 @csrf_exempt
 def reset_password(request):
-    #Llega información desde el front con react
     if request.method == "POST":
         token = request.POST.get("token")
         new_password = request.POST.get("password")
-        #Buscamos al usuario por token (ya que deberia ser unico y debe ser correcto, si no nos estan hackeando 0_0)
         user = CustomUser.objects.filter(token=token).first()
         loginLink = f"http://localhost:5173/login/"
 
         if user:
-            user.password = make_password(new_password)  # Encripta la nueva contraseña
-            user.token = None  # Eliminar el token después de usarlo
+            user.password = make_password(new_password)  
+            user.token = None 
             user.save()
 
-            #Envio de correo
             send_mail(
                 subject="🔐 Recuperación de contraseña",
-                message=f"Tu contraseña fue cambiada con exito!",  # Texto plano (fallback)
+                message=f"Tu contraseña fue cambiada con exito!",  
                 from_email="no-reply@errorpages.com",
                 recipient_list=[user.email],
                 fail_silently=False,
